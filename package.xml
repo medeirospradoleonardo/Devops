@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>InformationReportTH</members>
+        <members>InformationReportTHTest</members>
+        <members>RepresentanteLegalFixtureFactory</members>
+        <members>RepresentanteLegalTH</members>
+        <members>RepresentanteLegalTHTest</members>
+        <name>ApexClass</name>
+    </types>
+    <types>
+        <members>InformationReport</members>
+        <members>RepresentanteLegal</members>
+        <name>ApexTrigger</name>
+    </types>
+    <version>56.0</version>
+</Package><?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <version>56.0</version>
+</Package>
