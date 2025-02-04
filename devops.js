@@ -9,6 +9,9 @@ const URL = `https://${BASE_URL}/${ORGANIZATION}/${PROJECT}/_apis/wit/workitems/
 const args = require('minimist')(process.argv.slice(2))
 const convert = require('xml-js');
 const _ = require("lodash");
+const { HTMLToJSON } = require('html-to-json-parser');
+const {convertXML} = require("simple-xml-to-json")
+const fs = require('node:fs');
 
 async function modifyResolution(workItemId, resolution) {
   return await modifyField(workItemId, 'Microsoft.VSTS.Common.Resolution', resolution)
@@ -106,9 +109,18 @@ function mergeDeep(target, ...sources) {
 
 async function init() {
   const workItemId = (args?.id)?.toString().replace(/[^0-9]/g, '')
-  const newResolutionXML = args?.resolution
+  const fileName = (args?.resolution).toString()
+  console.log(fileName)
+  let newResolutionXML
+
+  try {
+    newResolutionXML = fs.readFileSync(fileName, 'utf8')
+  } catch (err) {
+    console.error(err)
+  }
 
   const newResolutionJSON = JSON.parse(convert.xml2json(newResolutionXML.substring(0, newResolutionXML.indexOf('</Package>') + 10), {compact: true, spaces: 4}))
+  // const newResolutionJSON = convertXML(newResolutionXML)
   const newResolutionHTML = formatResolutionJSON(newResolutionJSON)
   
   //colocando a nova direto
