@@ -111,23 +111,24 @@ async function init() {
   const newResolutionJSON = JSON.parse(convert.xml2json(newResolutionXML.substring(0, newResolutionXML.indexOf('</Package>') + 10), {compact: true, spaces: 4}))
   const newResolutionHTML = formatResolutionJSON(newResolutionJSON)
   
-  // colocando a nova direto
-  // let result = await (await modifyResolution(workItemId, newResolutionHTML)).json()
+  //colocando a nova direto
+  let result = await (await modifyResolution(workItemId, newResolutionHTML)).json()
   
-  const workItemReceived = await (await getWorkItem(workItemId, ['Microsoft.VSTS.Common.Resolution'])).json()
-  const currentResolution = workItemReceived?.fields['Microsoft.VSTS.Common.Resolution']
-  const currentResolutionHTML = (currentResolution.includes('<body>') ? currentResolution : '<body>' + currentResolution + '</body>').replace('automaticallyGenerated', '\"automaticallyGenerated\"')
+  // Dando upsert
+  // const workItemReceived = await (await getWorkItem(workItemId, ['Microsoft.VSTS.Common.Resolution'])).json()
+  // const currentResolution = workItemReceived?.fields['Microsoft.VSTS.Common.Resolution']
+  // const currentResolutionHTML = (currentResolution.includes('<body>') ? currentResolution : '<body>' + currentResolution + '</body>').replace('automaticallyGenerated', '\"automaticallyGenerated\"')
   
-  const currentResolutionJSON = JSON.parse(convert.xml2json(currentResolutionHTML, {compact: true, spaces: 4}))
+  // const currentResolutionJSON = JSON.parse(convert.xml2json(currentResolutionHTML, {compact: true, spaces: 4}))
   
-  currentResolutionJSON.body.div = currentResolutionJSON.body?.div?.length ? currentResolutionJSON.body.div : [currentResolutionJSON.body.div]
-  const newResolutionHTMLToJSON = JSON.parse(convert.xml2json(newResolutionHTML, {compact: true, spaces: 4}))
+  // currentResolutionJSON.body.div = currentResolutionJSON.body?.div?.length ? currentResolutionJSON.body.div : [currentResolutionJSON.body.div]
+  // const newResolutionHTMLToJSON = JSON.parse(convert.xml2json(newResolutionHTML, {compact: true, spaces: 4}))
   
-  // const mergedResolutionJSON = _.defaultsDeep(currentResolutionJSON, newResolutionHTMLToJSON)
-  const mergedResolutionJSON = concatResolutions(currentResolutionJSON, newResolutionHTMLToJSON)
-  const mergedResolutionHTML = convert.json2xml(mergedResolutionJSON, {compact: true, spaces: 4})
+  // // const mergedResolutionJSON = _.defaultsDeep(currentResolutionJSON, newResolutionHTMLToJSON)
+  // const mergedResolutionJSON = concatResolutions(currentResolutionJSON, newResolutionHTMLToJSON)
+  // const mergedResolutionHTML = convert.json2xml(mergedResolutionJSON, {compact: true, spaces: 4})
   
-  result = await (await modifyResolution(workItemId, mergedResolutionHTML)).json()
+  // result = await (await modifyResolution(workItemId, mergedResolutionHTML)).json()
 }
 
 init()
