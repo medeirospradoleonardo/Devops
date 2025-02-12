@@ -58,9 +58,9 @@ async function getWorkItem(workItemId, fields){
 
 function formatResolutionJSON(resolutionJSON) {
   return '<body><div><h2>' + AUTOMATED_LABEL + '</h2>' + resolutionJSON?.Package?.types?.reduce(
-    (accumulatorType, currentType) => accumulatorType + '<div>' + (createHeading(currentType?.name?._text) + currentType?.members?.reduce(
+    (accumulatorType, currentType) => accumulatorType + '<div>' + (createHeading(currentType?.name?._text) + (currentType?.members?.length ? currentType?.members?.reduce(
       (accumulatorMember, currentMember, index) => accumulatorMember + (createItem(currentMember?._text, index == currentType?.members?.length - 1)), '<ul>'
-    )) + '</ul></div>', ''
+    ) : '<ul>' + createItem(currentType?.members?._text, true)))  + '</ul></div>', ''
   ) + '</div></body>'
 }
 
@@ -130,7 +130,7 @@ async function init() {
   const fileName = (args?.fileName)?.toString()
   const resolution = (args?.resolution)?.toString()
 
-  fileName && runFile(fileName, workItemId)
+  fileName && runFile(fileName, workItemId, false)
   resolution && runResolution(resolution, workItemId)
   
 }
