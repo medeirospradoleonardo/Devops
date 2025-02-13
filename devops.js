@@ -10,13 +10,9 @@ const API_VERSION = process.env.DEV_OPS_API_VERSION
 const LOGIN = process.env.DEV_OPS_LOGIN
 const URL = `https://${BASE_URL}/${ORGANIZATION}/{project}/_apis/wit/workitems/`
 
-const TOKEN_BY_UNIQUE_NAME = {
-  [process.env.DEV_OPS_LEONARDO_UNIQUE_NAME]: process.env.DEV_OPS_LEONARDO_TOKEN
-}
-
-let TOKEN = process.env.DEV_OPS_LEONARDO_TOKEN
-
+let TOKEN = process.env.DEV_OPS_TOKEN_DEFAULT
 let projectName = PROJECTS?.[0]
+let tokenByUniqueName = {}
 
 const AUTOMATED_LABEL = '=========== Gerado Automaticamente ==========='
 
@@ -47,7 +43,7 @@ async function getAssignedUserUniqueName(workItemId) {
   }
 
 
-  return workItem?.fields[userAssignedToField]?.uniqueName
+  return workItem?.fields?.[userAssignedToField]?.uniqueName
 }
 
 async function modifyField(workItemId, field, value) {
@@ -72,7 +68,10 @@ async function modifyField(workItemId, field, value) {
     headers: headers
   })
 
-  return (await fetch(request)).json()
+  const response = await fetch(request)
+
+  const responseString = await response.text()
+  return responseString === '' ? {} : JSON.parse(responseString)
 }
 
 async function getWorkItem(workItemId, fields) {
@@ -87,7 +86,10 @@ async function getWorkItem(workItemId, fields) {
     headers: headers
   })
 
-  return (await fetch(request)).json()
+  const response = await fetch(request)
+
+  const responseString = await response.text()
+  return responseString === '' ? {} : JSON.parse(responseString)
 }
 
 function formatResolutionJSON(resolutionJSON) {
@@ -172,8 +174,23 @@ async function init() {
 
   const assignedUserUniqueName = await getAssignedUserUniqueName(workItemId)
 
-  if (TOKEN_BY_UNIQUE_NAME[assignedUserUniqueName]) {
-    TOKEN = TOKEN_BY_UNIQUE_NAME[assignedUserUniqueName]
+  for (envKey in process.env) {
+    if (!envKey.includes('DEV_OPS_UNIQUE_NAME')) {
+      continue;
+    }
+
+    const tokenKey = envKey.replace('UNIQUE_NAME', 'TOKEN')
+
+    tokenByUniqueName[process.env[envKey]] = process.env[tokenKey]
+  }
+
+  if (tokenByUniqueName[assignedUserUniqueName]) {
+    TOKEN = tokenByUniqueName[assignedUserUniqueName]
+  }
+
+  if (!TOKEN) {
+    console.log('Token não encontrado!')
+    return
   }
 
   fileName && runFile(fileName, workItemId, false)
