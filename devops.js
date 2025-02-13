@@ -61,7 +61,8 @@ async function modifyField(workItemId, field, value) {
         {
           op: 'replace',
           path: '/fields/' + field,
-          value: value
+          value: value,
+          type: 'Plaintext'
         }
       ]
     ),
@@ -120,7 +121,7 @@ function concatResolutions(currentResolution, newResolution) {
   return currentResolution
 }
 
-async function runFile(fileName, workItemId, concat) {
+async function runFile(fileName, workItemId, format, concat) {
   let newResolutionXML
 
   try {
@@ -130,17 +131,24 @@ async function runFile(fileName, workItemId, concat) {
     return
   }
 
-  runResolution(newResolutionXML, workItemId, concat)
+  runResolution(newResolutionXML, workItemId, format, concat)
 }
 
-async function runResolution(resolution, workItemId, concat = false) {
+async function runResolution(resolution, workItemId, format = false, concat = false) {
 
   const newResolutionJSON = JSON.parse(convert.xml2json(resolution, { compact: true, spaces: 4 }))
   const newResolutionHTML = formatResolutionJSON(newResolutionJSON)
 
   //colocando a nova direto
   if (!concat) {
-    return await modifyResolution(workItemId, newResolutionHTML)
+    let resolution = newResolutionHTML
+
+    if (!format) {
+      const mergedResolutionHTML = convert.json2xml(newResolutionJSON, { compact: true, spaces: 4 })
+      resolution = mergedResolutionHTML
+    }
+
+    return await modifyResolution(workItemId, resolution)
   }
 
   // Dando upsert (concatenando com o que ja tem, só trocando a parte gerada automaticamente)
@@ -165,12 +173,12 @@ async function init() {
   const workItemId = (args?.id)?.toString().replace(/[^0-9]/g, '')
   const fileName = (args?.fileName)?.toString()
   const resolution = (args?.resolution)?.toString()
+  const format = args?.format
 
   projectName = await getProjectName(workItemId)
 
   if (!projectName) {
-    console.log('Projeto não econtrado!')
-    return
+    return 'Projeto não econtrado!'
   }
 
   const assignedUserUniqueName = await getAssignedUserUniqueName(workItemId)
@@ -190,13 +198,14 @@ async function init() {
   }
 
   if (!TOKEN) {
-    console.log('Token não encontrado!')
-    return
+    return 'Token não encontrado!'
   }
 
-  fileName && runFile(fileName, workItemId)
-  resolution && runResolution(resolution, workItemId)
+  fileName && runFile(fileName, workItemId, format)
+  resolution && runResolution(resolution, workItemId, format)
 
+
+  return 'Resolution alterada!'
 }
 
 init()
