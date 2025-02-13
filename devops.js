@@ -10,8 +10,8 @@ const API_VERSION = process.env.DEV_OPS_API_VERSION
 const LOGIN = process.env.DEV_OPS_LOGIN
 const URL = `https://${BASE_URL}/${ORGANIZATION}/{project}/_apis/wit/workitems/`
 
-const TOKEN_BY_USER_NAME = {
-  'Leonardo Medeiros Prado': process.env.DEV_OPS_LEONARDO_TOKEN
+const TOKEN_BY_UNIQUE_NAME = {
+  'leonardo_medeiros_prado@hotmail.com': process.env.DEV_OPS_LEONARDO_TOKEN
 }
 
 let TOKEN = process.env.DEV_OPS_LEONARDO_TOKEN
@@ -38,16 +38,16 @@ async function getProjectName(workItemId) {
   return project
 }
 
-async function getAssignedUserName(workItemId) {
-  const userAssignedFieldName = 'System.AssignedTo'
-  const workItem = await getWorkItem(workItemId, [userAssignedFieldName])
+async function getAssignedUserUniqueName(workItemId) {
+  const userAssignedToField = 'System.AssignedTo'
+  const workItem = await getWorkItem(workItemId, [userAssignedToField])
 
   if (!workItem) {
     return;
   }
 
 
-  return workItem?.fields[userAssignedFieldName]?.displayName
+  return workItem?.fields[userAssignedToField]?.uniqueName
 }
 
 async function modifyField(workItemId, field, value) {
@@ -170,10 +170,10 @@ async function init() {
     return
   }
 
-  const assignedUserName = await getAssignedUserName(workItemId)
+  const assignedUserUniqueName = await getAssignedUserUniqueName(workItemId)
 
-  if (TOKEN_BY_USER_NAME[assignedUserName]) {
-    TOKEN = TOKEN_BY_USER_NAME[assignedUserName]
+  if (TOKEN_BY_UNIQUE_NAME[assignedUserUniqueName]) {
+    TOKEN = TOKEN_BY_UNIQUE_NAME[assignedUserUniqueName]
   }
 
   fileName && runFile(fileName, workItemId, false)
