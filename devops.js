@@ -8,8 +8,15 @@ const ORGANIZATION = process.env.DEV_OPS_ORGANIZATION
 const PROJECTS = process.env.DEV_OPS_PROJECTS?.split(';').map((project) => project.trim())
 const API_VERSION = process.env.DEV_OPS_API_VERSION
 const LOGIN = process.env.DEV_OPS_LOGIN
-const PASSWORD = process.env.DEV_OPS_PASSWORD
 const URL = `https://${BASE_URL}/${ORGANIZATION}/{project}/_apis/wit/workitems/`
+
+const TOKEN_BY_USER_NAME = {
+  'Leonardo Medeiros Prado': process.env.DEV_OPS_LEONARDO_TOKEN
+}
+
+let TOKEN = process.env.DEV_OPS_LEONARDO_TOKEN
+
+let projectName = PROJECTS?.[0]
 
 const AUTOMATED_LABEL = '=========== Gerado Automaticamente ==========='
 
@@ -20,7 +27,7 @@ async function modifyResolution(workItemId, resolution) {
 async function getProjectName(workItemId) {
   let project
   for (const projectName of PROJECTS) {
-    const workItem = await getWorkItem(workItemId, projectName)
+    const workItem = await getWorkItem(workItemId)
 
     if (workItem) {
       project = projectName
@@ -31,13 +38,24 @@ async function getProjectName(workItemId) {
   return project
 }
 
+async function getAssignedUserName(workItemId) {
+  const userAssignedFieldName = 'System.AssignedTo'
+  const workItem = await getWorkItem(workItemId, [userAssignedFieldName])
+
+  if (!workItem) {
+    return;
+  }
+
+
+  return workItem?.fields[userAssignedFieldName]?.displayName
+}
+
 async function modifyField(workItemId, field, value) {
 
-  const projectName = await getProjectName(workItemId)
   const url = URL.replace('{project}', projectName) + `${workItemId}?api-version=${API_VERSION}`
 
   let headers = new Headers()
-  headers.set('Authorization', 'Basic ' + btoa(`${LOGIN}:${PASSWORD}`))
+  headers.set('Authorization', 'Basic ' + btoa(`${LOGIN}:${TOKEN}`))
   headers.set('Content-Type', 'application/json-patch+json')
 
   const request = new Request(url, {
@@ -54,14 +72,14 @@ async function modifyField(workItemId, field, value) {
     headers: headers
   })
 
-  return await fetch(request)
+  return (await fetch(request)).json()
 }
 
-async function getWorkItem(workItemId, projectName, fields) {
+async function getWorkItem(workItemId, fields) {
   const url = URL.replace('{project}', projectName) + `${workItemId}?fields=${fields?.join(',')}&api-version=${API_VERSION}`
 
   let headers = new Headers()
-  headers.set('Authorization', 'Basic ' + btoa(`${LOGIN}:${PASSWORD}`))
+  headers.set('Authorization', 'Basic ' + btoa(`${LOGIN}:${TOKEN}`))
   headers.set('Content-Type', 'application/json-patch+json')
 
   const request = new Request(url, {
@@ -69,7 +87,7 @@ async function getWorkItem(workItemId, projectName, fields) {
     headers: headers
   })
 
-  return await fetch(request)
+  return (await fetch(request)).json()
 }
 
 function formatResolutionJSON(resolutionJSON) {
@@ -119,12 +137,11 @@ async function runResolution(resolution, workItemId, concat = true) {
 
   //colocando a nova direto
   if (!concat) {
-    return await (await modifyResolution(workItemId, newResolutionHTML)).json()
+    return await modifyResolution(workItemId, newResolutionHTML)
   }
 
   //Dando upsert
-  const projectName = await getProjectName(workItemId)
-  const workItemReceived = await (await getWorkItem(workItemId, projectName, ['Microsoft.VSTS.Common.Resolution'])).json()
+  const workItemReceived = await getWorkItem(workItemId, ['Microsoft.VSTS.Common.Resolution'])
   let currentResolution = workItemReceived?.fields['Microsoft.VSTS.Common.Resolution']
   currentResolution = currentResolution.replace(/<([A-z]+)([^>^/]*)>\s*<\/\1>/gim, '').replaceAll('<br>', '')
 
@@ -138,13 +155,26 @@ async function runResolution(resolution, workItemId, concat = true) {
   const mergedResolutionJSON = concatResolutions(currentResolutionJSON, newResolutionHTMLToJSON)
   const mergedResolutionHTML = convert.json2xml(mergedResolutionJSON, { compact: true, spaces: 4 })
 
-  return await (await modifyResolution(workItemId, mergedResolutionHTML)).json()
+  return await modifyResolution(workItemId, mergedResolutionHTML)
 }
 
 async function init() {
   const workItemId = (args?.id)?.toString().replace(/[^0-9]/g, '')
   const fileName = (args?.fileName)?.toString()
   const resolution = (args?.resolution)?.toString()
+
+  projectName = await getProjectName(workItemId)
+
+  if (!projectName) {
+    console.log('Projeto não econtrado!')
+    return
+  }
+
+  const assignedUserName = await getAssignedUserName(workItemId)
+
+  if (TOKEN_BY_USER_NAME[assignedUserName]) {
+    TOKEN = TOKEN_BY_USER_NAME[assignedUserName]
+  }
 
   fileName && runFile(fileName, workItemId, false)
   resolution && runResolution(resolution, workItemId)
