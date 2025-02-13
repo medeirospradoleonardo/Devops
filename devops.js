@@ -140,7 +140,7 @@ async function runResolution(resolution, workItemId, concat = true) {
     return await modifyResolution(workItemId, newResolutionHTML)
   }
 
-  //Dando upsert
+  // Dando upsert (concatenando com o que ja tem, só trocando a parte gerada automaticamente)
   const workItemReceived = await getWorkItem(workItemId, ['Microsoft.VSTS.Common.Resolution'])
   let currentResolution = workItemReceived?.fields['Microsoft.VSTS.Common.Resolution']
   currentResolution = currentResolution.replace(/<([A-z]+)([^>^/]*)>\s*<\/\1>/gim, '').replaceAll('<br>', '')
