@@ -127,6 +127,7 @@ async function runFile(fileName, workItemId, concat) {
     newResolutionXML = fs.readFileSync(fileName, 'utf8')
   } catch (err) {
     console.error(err)
+    return
   }
 
   runResolution(newResolutionXML, workItemId, concat)
@@ -194,7 +195,7 @@ async function init() {
   }
 
   fileName && runFile(fileName, workItemId, false)
-  resolution && runResolution(resolution, workItemId)
+  resolution && runResolution(resolution, workItemId, false)
 
 }
 
