@@ -178,6 +178,7 @@ async function init() {
   projectName = await getProjectName(workItemId)
 
   if (!projectName) {
+    console.log('Projeto não econtrado!')
     return 'Projeto não econtrado!'
   }
 
@@ -198,6 +199,7 @@ async function init() {
   }
 
   if (!TOKEN) {
+    console.log('Token não encontrado!')
     return 'Token não encontrado!'
   }
 
@@ -205,6 +207,7 @@ async function init() {
   resolution && runResolution(resolution, workItemId, format)
 
 
+  console.log('Resolution alterada!')
   return 'Resolution alterada!'
 }
 
