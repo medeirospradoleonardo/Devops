@@ -11,7 +11,7 @@ const LOGIN = process.env.DEV_OPS_LOGIN
 const URL = `https://${BASE_URL}/${ORGANIZATION}/{project}/_apis/wit/workitems/`
 
 const TOKEN_BY_UNIQUE_NAME = {
-  'leonardo_medeiros_prado@hotmail.com': process.env.DEV_OPS_LEONARDO_TOKEN
+  [process.env.DEV_OPS_LEONARDO_UNIQUE_NAME]: process.env.DEV_OPS_LEONARDO_TOKEN
 }
 
 let TOKEN = process.env.DEV_OPS_LEONARDO_TOKEN
