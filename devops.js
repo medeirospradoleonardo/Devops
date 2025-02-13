@@ -169,18 +169,7 @@ async function runResolution(resolution, workItemId, format = false, concat = fa
   return await modifyResolution(workItemId, mergedResolutionHTML)
 }
 
-async function init() {
-  const workItemId = (args?.id)?.toString().replace(/[^0-9]/g, '')
-  const fileName = (args?.fileName)?.toString()
-  const resolution = (args?.resolution)?.toString()
-  const format = args?.format
-
-  projectName = await getProjectName(workItemId)
-
-  if (!projectName) {
-    console.log('Projeto não econtrado!')
-    return 'Projeto não econtrado!'
-  }
+async function updateTokenWithAssigner() {
 
   const assignedUserUniqueName = await getAssignedUserUniqueName(workItemId)
 
@@ -196,6 +185,26 @@ async function init() {
 
   if (tokenByUniqueName[assignedUserUniqueName]) {
     TOKEN = tokenByUniqueName[assignedUserUniqueName]
+  }
+}
+
+async function init() {
+  const workItemId = (args?.id)?.toString().replace(/[^0-9]/g, '')
+  const fileName = (args?.fileName)?.toString()
+  const resolution = (args?.resolution)?.toString()
+  const format = args?.format
+  const updateWithAssigner = args?.assignedUpdate ?? false
+
+  projectName = await getProjectName(workItemId)
+
+  if (!projectName) {
+    console.log('Projeto não econtrado!')
+    return 'Projeto não econtrado!'
+  }
+
+
+  if (updateWithAssigner) {
+    await updateTokenWithAssigner()
   }
 
   if (!TOKEN) {
