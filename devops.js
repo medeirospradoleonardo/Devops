@@ -133,7 +133,7 @@ async function runFile(fileName, workItemId, concat) {
   runResolution(newResolutionXML, workItemId, concat)
 }
 
-async function runResolution(resolution, workItemId, concat = true) {
+async function runResolution(resolution, workItemId, concat = false) {
 
   const newResolutionJSON = JSON.parse(convert.xml2json(resolution, { compact: true, spaces: 4 }))
   const newResolutionHTML = formatResolutionJSON(newResolutionJSON)
@@ -194,8 +194,8 @@ async function init() {
     return
   }
 
-  fileName && runFile(fileName, workItemId, false)
-  resolution && runResolution(resolution, workItemId, false)
+  fileName && runFile(fileName, workItemId)
+  resolution && runResolution(resolution, workItemId)
 
 }
 
