@@ -21,17 +21,18 @@ async function modifyResolution(workItemId, resolution) {
 }
 
 async function getProjectName(workItemId) {
-  let project
-  for (const projectName of PROJECTS) {
+  let projectNameToReturn
+  for (const project of PROJECTS) {
+    projectName = project;
     const workItem = await getWorkItem(workItemId)
 
-    if (workItem) {
-      project = projectName
+    if (!workItem.message) {
+      projectNameToReturn = projectName
       break;
     }
   }
 
-  return project
+  return projectNameToReturn
 }
 
 async function getAssignedUserUniqueName(workItemId) {
@@ -76,7 +77,7 @@ async function modifyField(workItemId, field, value) {
 }
 
 async function getWorkItem(workItemId, fields) {
-  const url = URL.replace('{project}', projectName) + `${workItemId}?fields=${fields?.join(',')}&api-version=${API_VERSION}`
+  const url = URL.replace('{project}', projectName) + `${workItemId}?api-version=${API_VERSION}${fields ? `&fields=${fields?.join(',')}` : ''}`
 
   let headers = new Headers()
   headers.set('Authorization', 'Basic ' + btoa(`${LOGIN}:${TOKEN}`))
@@ -202,7 +203,7 @@ async function init() {
   projectName = await getProjectName(workItemId)
 
   if (!projectName) {
-    console.log('Projeto não econtrado!')
+    console.log('Projeto ou WorkItem não econtrado!')
     return 'Projeto não econtrado!'
   }
 
