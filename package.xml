@@ -1,28 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
-    <types>
-        <members>Notification__e.Content__c</members>
-        <members>Notification__e.RecordId__c</members>
-        <members>Notification__e.Title__c</members>
-        <members>Notification__e.Type__c</members>
-        <members>Notification__e.UserId__c</members>
-        <name>CustomField</name>
-    </types>
-    <types>
-        <members>Notification__e</members>
-        <name>CustomObject</name>
-    </types>
-    <types>
-        <members>GenerateQuoteDocument</members>
-        <members>NotificationEventUtils</members>
-        <members>OppMngController</members>
-        <members>SendQuoteApprovalEmail</members>
-        <name>ApexClass</name>
-    </types>
-    <types>
-        <members>lwcOppMngMain</members>
-        <members>lwcOppMngTabQuotes</members>
-        <name>LightningComponentBundle</name>
-    </types>
-    <version>56.0</version>
+	<types>
+		<members>Account</members>
+		<name>ApexTrigger</name>
+	</types>
+	<version>62.0</version>
 </Package>

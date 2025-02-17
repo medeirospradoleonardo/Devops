@@ -93,11 +93,15 @@ async function getWorkItem(workItemId, fields) {
   return responseString === '' ? {} : JSON.parse(responseString)
 }
 
+function getArray(objectOrArray) {
+  return objectOrArray?.length ? objectOrArray : [objectOrArray]
+}
+
 function formatResolutionJSON(resolutionJSON) {
-  return '<body><div><h2>' + AUTOMATED_LABEL + '</h2>' + resolutionJSON?.Package?.types?.reduce(
-    (accumulatorType, currentType) => accumulatorType + '<div>' + (createHeading(currentType?.name?._text) + (currentType?.members?.length ? currentType?.members?.reduce(
-      (accumulatorMember, currentMember, index) => accumulatorMember + (createItem(currentMember?._text, index == currentType?.members?.length - 1)), '<ul>'
-    ) : '<ul>' + createItem(currentType?.members?._text, true))) + '</ul></div>', ''
+  return '<body><div><h2>' + AUTOMATED_LABEL + '</h2>' + getArray(resolutionJSON?.Package?.types).reduce(
+    (accumulatorType, currentType) => accumulatorType + '<div>' + (createHeading(currentType?.name?._text) + (getArray(currentType?.members).reduce(
+      (accumulatorMember, currentMember, index) => accumulatorMember + (createItem(currentMember?._text, index == getArray(currentType?.members).length - 1)), '<ul>'
+    ))) + '</ul></div>', ''
   ) + '</div></body>'
 }
 
