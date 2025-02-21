@@ -3,14 +3,13 @@ const convert = require('xml-js');
 const fs = require('node:fs');
 require('dotenv').config()
 
-const BASE_URL = process.env.DEV_OPS_BASE_URL
-const ORGANIZATION = process.env.DEV_OPS_ORGANIZATION
-const PROJECTS = process.env.DEV_OPS_PROJECTS?.split(';').map((project) => project.trim())
-const API_VERSION = process.env.DEV_OPS_API_VERSION
-const LOGIN = process.env.DEV_OPS_LOGIN
-const URL = `https://${BASE_URL}/${ORGANIZATION}/{project}/_apis/wit/workitems/`
+const ORGANIZATION = process.env.DEVOPS_ORGANIZATION
+const PROJECTS = process.env.DEVOPS_PROJECTS?.split(';').map((project) => project.trim())
+const API_VERSION = '7.2-preview'
+const LOGIN = 'basic'
+const URL = `https://dev.azure.com/${ORGANIZATION}/{project}/_apis/wit/workitems/`
 
-let TOKEN = process.env.DEV_OPS_TOKEN_DEFAULT
+let TOKEN = process.env.DEVOPS_TOKEN_DEFAULT
 let projectName = PROJECTS?.[0]
 let tokenByUniqueName = {}
 
@@ -187,7 +186,7 @@ async function updateTokenWithAssigner() {
   const assignedUserUniqueName = await getAssignedUserUniqueName(workItemId)
 
   for (envKey in process.env) {
-    if (!envKey.includes('DEV_OPS_UNIQUE_NAME')) {
+    if (!envKey.includes('DEVOPS_UNIQUE_NAME')) {
       continue;
     }
 
