@@ -26,7 +26,7 @@ async function getProjectName(workItemId) {
     projectName = project;
     const workItem = await getWorkItem(workItemId)
 
-    if (!workItem.message) {
+    if (workItem) {
       projectNameToReturn = projectName
       break;
     }
@@ -72,8 +72,12 @@ async function modifyField(workItemId, field, value) {
 
   const response = await fetch(request)
 
+  if (response.status != 200) {
+    return
+  }
+
   const responseString = await response.text()
-  return responseString === '' ? {} : JSON.parse(responseString)
+  return JSON.parse(responseString)
 }
 
 async function getWorkItem(workItemId, fields) {
@@ -90,8 +94,12 @@ async function getWorkItem(workItemId, fields) {
 
   const response = await fetch(request)
 
+  if (response.status != 200) {
+    return
+  }
+
   const responseString = await response.text()
-  return responseString === '' ? {} : JSON.parse(responseString)
+  return JSON.parse(responseString)
 }
 
 function getArray(objectOrArray) {
