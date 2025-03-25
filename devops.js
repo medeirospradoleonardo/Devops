@@ -102,7 +102,7 @@ async function getWorkItem(workItemId, fields) {
 }
 
 function getArray(objectOrArray) {
-  return objectOrArray?.length ? objectOrArray : [objectOrArray]
+  return objectOrArray ? (Array.isArray(objectOrArray) ? objectOrArray : [objectOrArray]) : []
 }
 
 function formatResolutionJSON(resolutionJSON) {
@@ -118,22 +118,71 @@ function createHeading(headingName) {
 }
 
 function createItem(itemName, isLast) {
-  return `<li>${itemName.trim()}${isLast ? '. ' : '; '}</li>`
+  return `<li>${itemName.trim()}</li>`
+  // return `<li>${itemName.trim()}${isLast ? '. ' : '; '}</li>`
 }
 
-function concatResolutions(currentResolution, newResolution) {
-  let automatedGeneratedDivIndex = currentResolution?.body?.div?.findIndex((div) => div?.h2?.length ? div?.h2?.find((h2) => h2._text?.trim() == AUTOMATED_LABEL) : div?.h2?._text?.trim() == AUTOMATED_LABEL)
+function getArrayByNameTag(array, nameTag) {
+  return array.find((element) => element?.['h3']._text == nameTag)
+}
 
-  if (automatedGeneratedDivIndex >= 0) {
-    currentResolution.body.div[automatedGeneratedDivIndex].div = newResolution.body.div.div
-  } else {
-    currentResolution.body.div = currentResolution?.body?.div ? currentResolution?.body?.div.concat(newResolution?.body?.div) : [newResolution?.body?.div]
+function mergeArray(a, b, prop) {
+  let reduced = [];
+  for (let i = 0; i < a.length; i++) {
+    let aitem = a[i];
+    let found = false;
+    for (let ii = 0; ii < b.length; ii++) {
+      if (aitem[prop]?.trim() === b[ii][prop]?.trim()) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      reduced.push(aitem);
+    }
   }
-
-  return currentResolution
+  return reduced.concat(b);
 }
 
-async function runFile(fileName, workItemId, format, concat) {
+function mergeResolutions(currentResolution, newResolution) {
+  let currentDiv = getArray(getArray(currentResolution.body).find((element) => element?.div?.['h2']?._text?.trim() == AUTOMATED_LABEL.trim())?.div?.div)
+  const newDiv = getArray(getArray(newResolution.body).find((element) => element?.div?.['h2']?._text?.trim() == AUTOMATED_LABEL.trim())?.div?.div)
+
+  currentDiv.forEach((element) => {
+
+    let currentArray = getArray(element?.ul?.li)
+    const newArray = getArray(getArrayByNameTag(newDiv, element?.['h3']?._text)?.ul?.li)
+
+    if (!currentArray?.length || !newArray?.length) {
+      return
+    }
+
+    element.ul.li = (mergeArray(currentArray, newArray, '_text'))
+    element.ul.li.sort((a, b) => a._text.localeCompare(b._text))
+  })
+
+  newDiv.forEach((element) => {
+
+    const newArray = getArray(element?.ul?.li)
+    const currentArray = getArray(getArrayByNameTag(currentDiv, element?.['h3']?._text)?.ul?.li)
+
+    if (!newArray?.length || currentArray.length) {
+      return
+    }
+
+    newArray.sort((a, b) => a._text.localeCompare(b._text))
+
+    element.ul.li = newArray
+
+    currentDiv = currentDiv.concat([element]).sort((a, b) => a._text - b._text)
+  })
+
+  newResolution.body.div.div = currentDiv
+
+  return newResolution
+}
+
+async function runFile(fileName, workItemId, format, merge) {
   let newResolutionXML
 
   try {
@@ -143,27 +192,26 @@ async function runFile(fileName, workItemId, format, concat) {
     return
   }
 
-  runResolution(newResolutionXML, workItemId, format, concat)
+  runResolution(newResolutionXML, workItemId, format, merge)
 }
 
-async function runResolution(resolution, workItemId, format = false, concat = false) {
+async function runResolution(resolution, workItemId, format = false, merge = false) {
 
   const newResolutionJSON = JSON.parse(convert.xml2json(resolution, { compact: true, spaces: 4 }))
   const newResolutionHTML = formatResolutionJSON(newResolutionJSON)
 
   //colocando a nova direto
-  if (!concat) {
+  if (!merge) {
     let resolution = newResolutionHTML
 
     if (!format) {
-      const mergedResolutionHTML = convert.json2xml(newResolutionJSON, { compact: true, spaces: 4 })
-      resolution = mergedResolutionHTML
+      resolution = convert.json2xml(newResolutionJSON, { compact: true, spaces: 4 })
     }
 
     return await modifyResolution(workItemId, resolution)
   }
 
-  // Dando upsert (concatenando com o que ja tem, só trocando a parte gerada automaticamente)
+  // Dando upsert (mergeenando com o que ja tem, só trocando a parte gerada automaticamente)
   const workItemReceived = await getWorkItem(workItemId, ['Microsoft.VSTS.Common.Resolution'])
   let currentResolution = workItemReceived?.fields['Microsoft.VSTS.Common.Resolution']
   currentResolution = currentResolution.replace(/<([A-z]+)([^>^/]*)>\s*<\/\1>/gim, '').replaceAll('<br>', '')
@@ -172,10 +220,9 @@ async function runResolution(resolution, workItemId, format = false, concat = fa
 
   const currentResolutionJSON = JSON.parse(convert.xml2json(currentResolutionHTML, { compact: true, spaces: 4 }))
 
-  currentResolutionJSON.body.div = currentResolutionJSON.body.div ? (currentResolutionJSON.body?.div?.length ? currentResolutionJSON.body.div : [currentResolutionJSON.body.div]) : []
   const newResolutionHTMLToJSON = JSON.parse(convert.xml2json(newResolutionHTML, { compact: true, spaces: 4 }))
 
-  const mergedResolutionJSON = concatResolutions(currentResolutionJSON, newResolutionHTMLToJSON)
+  const mergedResolutionJSON = mergeResolutions(currentResolutionJSON, newResolutionHTMLToJSON)
   const mergedResolutionHTML = convert.json2xml(mergedResolutionJSON, { compact: true, spaces: 4 })
 
   return await modifyResolution(workItemId, mergedResolutionHTML)
@@ -205,6 +252,7 @@ async function init() {
   const fileName = (args?.fileName)?.toString()
   const resolution = (args?.resolution)?.toString()
   const format = args?.format
+  const merge = args?.merge
   const updateWithAssigner = args?.assignedUpdate ?? false
 
   projectName = await getProjectName(workItemId)
@@ -224,8 +272,8 @@ async function init() {
     return 'Token não encontrado!'
   }
 
-  fileName && runFile(fileName, workItemId, format)
-  resolution && runResolution(resolution, workItemId, format)
+  fileName && runFile(fileName, workItemId, format, merge)
+  resolution && runResolution(resolution, workItemId, format, merge)
 
 
   console.log('Resolution alterada!')
