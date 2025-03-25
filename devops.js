@@ -124,7 +124,7 @@ function createItem(itemName, isLast) {
 }
 
 function getArrayByNameTag(array, nameTag) {
-  return array.find((element) => element?.['h3']._text == nameTag)
+  return array.find((element) => element?.['h3']?._text == nameTag)
 }
 
 function mergeArray(a, b, prop) {
@@ -146,7 +146,18 @@ function mergeArray(a, b, prop) {
 }
 
 function mergeResolutions(currentResolution, newResolution) {
+
   let currentDiv = getArray(getArray(currentResolution.body).find((element) => element?.div?.['h2']?._text?.trim() == AUTOMATED_LABEL.trim())?.div?.div)
+
+  if (!currentDiv.length) {
+    currentDiv = getArray(getArray(currentResolution.body).find((element) => element?.['h2']?._text?.trim() == AUTOMATED_LABEL.trim())?.div)
+
+    const currentResolutionDivIndex = getArray(currentResolution.body.div).findIndex((element) => element?.['h2']?._text?.trim() == AUTOMATED_LABEL.trim())
+
+    currentResolution.body.div = getArray(currentResolution.body.div).slice(currentResolutionDivIndex, currentResolutionDivIndex - 1)
+  }
+
+
   const newDiv = getArray(getArray(newResolution.body).find((element) => element?.div?.['h2']?._text?.trim() == AUTOMATED_LABEL.trim())?.div?.div)
 
   currentDiv.forEach((element) => {
@@ -178,7 +189,11 @@ function mergeResolutions(currentResolution, newResolution) {
     currentDiv = currentDiv.concat([element]).sort((a, b) => a._text - b._text)
   })
 
-  newResolution.body.div.div = currentDiv
+  newResolution.body.div = {
+    ...currentResolution.body.div,
+    ...newResolution.body.div,
+    div: currentDiv
+  }
 
   return newResolution
 }
