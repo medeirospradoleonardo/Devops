@@ -107,7 +107,11 @@ function getArray(objectOrArray) {
 }
 
 function formatResolutionJSON(resolutionJSON) {
-  return '<body><div><h2>' + AUTOMATED_LABEL + '</h2>' + getArray(resolutionJSON?.Package?.types).reduce(
+
+  const formatedResolution = getArray(resolutionJSON?.Package?.types)
+  formatedResolution.sort((a, b) => a?.name?._text.localeCompare(b?.name?._text))
+
+  return '<body><div><h2>' + AUTOMATED_LABEL + '</h2>' + formatedResolution.reduce(
     (accumulatorType, currentType) => accumulatorType + '<div>' + (createHeading(currentType?.name?._text) + (getArray(currentType?.members).reduce(
       (accumulatorMember, currentMember, index) => accumulatorMember + (createItem(currentMember?._text, index == getArray(currentType?.members).length - 1)), '<ul>'
     ))) + '</ul></div>', ''
