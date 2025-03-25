@@ -8,6 +8,7 @@ const PROJECTS = process.env.DEVOPS_PROJECTS?.split(';').map((project) => projec
 const API_VERSION = '7.2-preview'
 const LOGIN = 'basic'
 const URL = `https://dev.azure.com/${ORGANIZATION}/{project}/_apis/wit/workitems/`
+const RESOLUTION_FIELD = 'Microsoft.VSTS.Common.Resolution'
 
 let TOKEN = process.env.DEVOPS_TOKEN_DEFAULT
 let projectName = PROJECTS?.[0]
@@ -16,7 +17,7 @@ let tokenByUniqueName = {}
 const AUTOMATED_LABEL = '=========== Gerado Automaticamente ==========='
 
 async function modifyResolution(workItemId, resolution) {
-  return await modifyField(workItemId, 'Microsoft.VSTS.Common.Resolution', resolution)
+  return await modifyField(workItemId, RESOLUTION_FIELD, resolution)
 }
 
 async function getProjectName(workItemId) {
@@ -212,8 +213,8 @@ async function runResolution(resolution, workItemId, format = false, merge = fal
   }
 
   // Dando upsert (mergeenando com o que ja tem, só trocando a parte gerada automaticamente)
-  const workItemReceived = await getWorkItem(workItemId, ['Microsoft.VSTS.Common.Resolution'])
-  let currentResolution = workItemReceived?.fields['Microsoft.VSTS.Common.Resolution']
+  const workItemReceived = await getWorkItem(workItemId, [RESOLUTION_FIELD])
+  let currentResolution = workItemReceived?.fields[RESOLUTION_FIELD]
   currentResolution = currentResolution.replace(/<([A-z]+)([^>^/]*)>\s*<\/\1>/gim, '').replaceAll('<br>', '')
 
   const currentResolutionHTML = (currentResolution.includes('<body>') ? currentResolution : '<body>' + currentResolution + '</body>')
