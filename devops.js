@@ -252,7 +252,7 @@ async function init() {
   const fileName = (args?.fileName)?.toString()
   const resolution = (args?.resolution)?.toString()
   const format = args?.format
-  const merge = args?.merge
+  const merge = !args?.override ?? true
   const updateWithAssigner = args?.assignedUpdate ?? false
 
   projectName = await getProjectName(workItemId)
