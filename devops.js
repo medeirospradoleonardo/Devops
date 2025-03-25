@@ -195,6 +195,8 @@ function mergeResolutions(currentResolution, newResolution) {
     div: currentDiv
   }
 
+  newResolution.body.div.div.sort((a, b) => a?.['h3']?._text.localeCompare(b?.['h3']?._text))
+
   return newResolution
 }
 
