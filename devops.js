@@ -174,7 +174,7 @@ function mergeResolutions(currentResolution, newResolution) {
     }
 
     element.ul.li = (mergeArray(currentArray, newArray, '_text'))
-    element.ul.li.sort((a, b) => a._text.localeCompare(b._text))
+    element.ul.li.sort((a, b) => a?._text?.localeCompare(b?._text))
   })
 
   newDiv.forEach((element) => {
