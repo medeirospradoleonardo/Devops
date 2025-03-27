@@ -206,48 +206,60 @@ function mergeResolutions(currentResolution, newResolution) {
 
 async function runFile(fileName, workItemId, format, merge) {
   let newResolutionXML
+  let response
 
   try {
     newResolutionXML = fs.readFileSync(fileName, 'utf8')
-  } catch (err) {
-    console.error(err)
-    return
+    response = await runResolution(newResolutionXML, workItemId, format, merge)
+  } catch (error) {
+    response = error
   }
 
-  runResolution(newResolutionXML, workItemId, format, merge)
+  return response
 }
 
 async function runResolution(resolution, workItemId, format = false, merge = false) {
 
-  const newResolutionJSON = JSON.parse(convert.xml2json(resolution, { compact: true, spaces: 4 }))
-  const newResolutionHTML = formatResolutionJSON(newResolutionJSON)
+  let response
 
-  //colocando a nova direto
-  if (!merge) {
-    let resolution = newResolutionHTML
+  try {
+    const newResolutionJSON = JSON.parse(convert.xml2json(resolution, { compact: true, spaces: 4 }))
+    const newResolutionHTML = formatResolutionJSON(newResolutionJSON)
 
-    if (!format) {
-      resolution = convert.json2xml(newResolutionJSON, { compact: true, spaces: 4 })
+    //colocando a nova direto
+    if (!merge) {
+      let resolution = newResolutionHTML
+
+      if (!format) {
+        resolution = convert.json2xml(newResolutionJSON, { compact: true, spaces: 4 })
+      }
+
+      return await modifyResolution(workItemId, resolution)
     }
 
-    return await modifyResolution(workItemId, resolution)
+    // Dando upsert (mergeenando com o que ja tem, só trocando a parte gerada automaticamente)
+    const workItemReceived = await getWorkItem(workItemId, [RESOLUTION_FIELD])
+    let currentResolution = workItemReceived?.fields[RESOLUTION_FIELD]
+    currentResolution = currentResolution?.replace(/<([A-z]+)([^>^/]*)>\s*<\/\1>/gim, '').replaceAll('<br>', '')
+
+    const currentResolutionHTML = (currentResolution?.includes('<body>') ? currentResolution : '<body>' + currentResolution + '</body>')
+
+    const currentResolutionJSON = JSON.parse(convert.xml2json(currentResolutionHTML, { compact: true, spaces: 4 }))
+
+    const newResolutionHTMLToJSON = JSON.parse(convert.xml2json(newResolutionHTML, { compact: true, spaces: 4 }))
+
+    const mergedResolutionJSON = mergeResolutions(currentResolutionJSON, newResolutionHTMLToJSON)
+    const mergedResolutionHTML = convert.json2xml(mergedResolutionJSON, { compact: true, spaces: 4 })
+
+    await modifyResolution(workItemId, mergedResolutionHTML)
+
+    response = 'Resolution alterada!'
+  } catch (error) {
+    response = error
   }
 
-  // Dando upsert (mergeenando com o que ja tem, só trocando a parte gerada automaticamente)
-  const workItemReceived = await getWorkItem(workItemId, [RESOLUTION_FIELD])
-  let currentResolution = workItemReceived?.fields[RESOLUTION_FIELD]
-  currentResolution = currentResolution?.replace(/<([A-z]+)([^>^/]*)>\s*<\/\1>/gim, '').replaceAll('<br>', '')
+  return response
 
-  const currentResolutionHTML = (currentResolution?.includes('<body>') ? currentResolution : '<body>' + currentResolution + '</body>')
-
-  const currentResolutionJSON = JSON.parse(convert.xml2json(currentResolutionHTML, { compact: true, spaces: 4 }))
-
-  const newResolutionHTMLToJSON = JSON.parse(convert.xml2json(newResolutionHTML, { compact: true, spaces: 4 }))
-
-  const mergedResolutionJSON = mergeResolutions(currentResolutionJSON, newResolutionHTMLToJSON)
-  const mergedResolutionHTML = convert.json2xml(mergedResolutionJSON, { compact: true, spaces: 4 })
-
-  return await modifyResolution(workItemId, mergedResolutionHTML)
 }
 
 async function updateTokenWithAssigner() {
@@ -279,27 +291,36 @@ async function init() {
 
   projectName = await getProjectName(workItemId)
 
-  if (!projectName) {
-    console.log('Projeto ou WorkItem não econtrado!')
-    return 'Projeto não econtrado!'
-  }
+  let response
 
+  if (!projectName) {
+    response = 'Projeto ou WorkItem não econtrado!'
+    console.log(response)
+    return response
+  }
 
   if (updateWithAssigner) {
     await updateTokenWithAssigner()
   }
 
   if (!TOKEN) {
-    console.log('Token não encontrado!')
-    return 'Token não encontrado!'
+    response = 'Token não encontrado!'
+    console.log(response)
+    return response
   }
 
-  fileName && runFile(fileName, workItemId, format, merge)
-  resolution && runResolution(resolution, workItemId, format, merge)
+  if (fileName) {
+    response = await runFile(fileName, workItemId, format, merge)
+    console.log(response)
+    return response
+  }
 
+  if (resolution) {
+    response = await runResolution(resolution, workItemId, format, merge)
+    console.log(response)
+    return response
+  }
 
-  console.log('Resolution alterada!')
-  return 'Resolution alterada!'
 }
 
 init()
