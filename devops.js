@@ -234,7 +234,9 @@ async function runResolution(resolution, workItemId, format = false, merge = fal
         resolution = convert.json2xml(newResolutionJSON, { compact: true, spaces: 4 })
       }
 
-      return await modifyResolution(workItemId, resolution)
+      await modifyResolution(workItemId, resolution)
+
+      response = 'Resolution alterada!'
     }
 
     // Dando upsert (mergeenando com o que ja tem, só trocando a parte gerada automaticamente)
