@@ -239,9 +239,10 @@ async function runResolution(resolution, workItemId, format = false, merge = fal
       response = 'Resolution alterada!'
     }
 
-    // Dando upsert (mergeenando com o que ja tem, só trocando a parte gerada automaticamente)
+    // Dando upsert (mergeenando com o que ja tem)
     const workItemReceived = await getWorkItem(workItemId, [RESOLUTION_FIELD])
     let currentResolution = workItemReceived?.fields[RESOLUTION_FIELD]
+
     currentResolution = currentResolution?.replace(/<([A-z]+)([^>^/]*)>\s*<\/\1>/gim, '').replaceAll('<br>', '')
 
     const currentResolutionHTML = (currentResolution?.includes('<body>') ? currentResolution : '<body>' + currentResolution + '</body>')
@@ -295,6 +296,12 @@ async function init() {
 
   let response
 
+  if (!TOKEN) {
+    response = 'Token não encontrado!'
+    console.log(response)
+    return response
+  }
+
   if (!projectName) {
     response = 'Projeto ou WorkItem não econtrado!'
     console.log(response)
@@ -305,19 +312,13 @@ async function init() {
     await updateTokenWithAssigner()
   }
 
-  if (!TOKEN) {
-    response = 'Token não encontrado!'
-    console.log(response)
-    return response
-  }
-
-  if (fileName) {
+  if (!resolution && fileName) {
     response = await runFile(fileName, workItemId, format, merge)
     console.log(response)
     return response
   }
 
-  if (resolution) {
+  if (!fileName && resolution) {
     response = await runResolution(resolution, workItemId, format, merge)
     console.log(response)
     return response
