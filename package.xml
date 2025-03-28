@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
 	<types>
-        <members>lwcOrderMngTabProducts</members>
-        <members>lwcOrderMngMain</members>
-        <name>LightningComponentBundle</name>
-    </types>
+		<members>Teste1</members>
+		<members>Teste3</members>
+		<name>ApexTrigger</name>
+	</types>
 	<types>
-        <members>OrderMngController</members>
-        <name>ApexClass</name>
-    </types>
-    <version>56.0</version>
+		<members>Teste1</members>
+		<members>Teste3</members>
+		<name>ApexClass</name>
+	</types>
+	<version>62.0</version>
 </Package>
