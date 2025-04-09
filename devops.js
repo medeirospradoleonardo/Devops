@@ -237,6 +237,8 @@ async function runResolution(resolution, workItemId, format = false, merge = fal
       await modifyResolution(workItemId, resolution)
 
       response = 'Resolution alterada!'
+
+      return response
     }
 
     // Dando upsert (mergeenando com o que ja tem)
