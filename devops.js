@@ -286,8 +286,13 @@ async function updateTokenWithAssigner() {
   }
 }
 
+function extractNumber(code) {
+  const match = code.match(/\d+/);
+  return match ? match[0] : null;
+}
+
 async function init() {
-  const workItemId = (args?.id)?.toString().replace(/[^0-9]/g, '')
+  const workItemId = extractNumber(args?.id?.toString())
   const fileName = (args?.fileName)?.toString()
   const resolution = (args?.resolution)?.toString()
   const format = args?.format
