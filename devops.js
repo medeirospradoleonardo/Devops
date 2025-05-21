@@ -4,35 +4,24 @@ const fs = require('node:fs');
 require('dotenv').config()
 
 const ORGANIZATION = process.env.DEVOPS_ORGANIZATION
-const PROJECTS = process.env.DEVOPS_PROJECTS?.split(';').map((project) => project.trim())
 const API_VERSION = '7.2-preview'
 const LOGIN = 'basic'
-const URL = `https://dev.azure.com/${ORGANIZATION}/{project}/_apis/wit/workitems/`
+const URL = `https://dev.azure.com/${ORGANIZATION}/_apis/wit/workitems/`
 const RESOLUTION_FIELD = 'Microsoft.VSTS.Common.Resolution'
 
+const TRANSLATE_RESPONSE = {
+  200: 'Resolution alterada com sucesso!',
+  401: 'Token Expirado',
+  404: 'WorkItem não econtrado!'
+}
+
 let TOKEN = process.env.DEVOPS_TOKEN_DEFAULT
-let projectName = PROJECTS?.[0]
 let tokenByUniqueName = {}
 
 const AUTOMATED_LABEL = '=========== Gerado Automaticamente ==========='
 
 async function modifyResolution(workItemId, resolution) {
-  return await modifyField(workItemId, RESOLUTION_FIELD, resolution)
-}
-
-async function getProjectName(workItemId) {
-  let projectNameToReturn
-  for (const project of PROJECTS) {
-    projectName = project;
-    const workItem = await getWorkItem(workItemId)
-
-    if (workItem) {
-      projectNameToReturn = projectName
-      break;
-    }
-  }
-
-  return projectNameToReturn
+  return TRANSLATE_RESPONSE[(await modifyField(workItemId, RESOLUTION_FIELD, resolution))?.status]
 }
 
 async function getAssignedUserUniqueName(workItemId) {
@@ -43,13 +32,12 @@ async function getAssignedUserUniqueName(workItemId) {
     return;
   }
 
-
   return workItem?.fields?.[userAssignedToField]?.uniqueName
 }
 
 async function modifyField(workItemId, field, value) {
 
-  const url = URL.replace('{project}', projectName) + `${workItemId}?api-version=${API_VERSION}`
+  const url = URL + `${workItemId}?api-version=${API_VERSION}`
 
   let headers = new Headers()
   headers.set('Authorization', 'Basic ' + btoa(`${LOGIN}:${TOKEN}`))
@@ -70,18 +58,11 @@ async function modifyField(workItemId, field, value) {
     headers: headers
   })
 
-  const response = await fetch(request)
-
-  if (response.status != 200) {
-    return
-  }
-
-  const responseString = await response.text()
-  return JSON.parse(responseString)
+  return await fetch(request)
 }
 
 async function getWorkItem(workItemId, fields) {
-  const url = URL.replace('{project}', projectName) + `${workItemId}?api-version=${API_VERSION}${fields ? `&fields=${fields?.join(',')}` : ''}`
+  const url = URL + `${workItemId}?api-version=${API_VERSION}${fields ? `&fields=${fields?.join(',')}` : ''}`
 
   let headers = new Headers()
   headers.set('Authorization', 'Basic ' + btoa(`${LOGIN}:${TOKEN}`))
@@ -92,14 +73,7 @@ async function getWorkItem(workItemId, fields) {
     headers: headers
   })
 
-  const response = await fetch(request)
-
-  if (response.status != 200) {
-    return
-  }
-
-  const responseString = await response.text()
-  return JSON.parse(responseString)
+  return await fetch(request)
 }
 
 function getArray(objectOrArray) {
@@ -113,7 +87,7 @@ function formatResolutionJSON(resolutionJSON) {
 
   return '<body><div><h2>' + AUTOMATED_LABEL + '</h2>' + formatedResolution.reduce(
     (accumulatorType, currentType) => accumulatorType + '<div>' + (createHeading(currentType?.name?._text) + (getArray(currentType?.members).reduce(
-      (accumulatorMember, currentMember, index) => accumulatorMember + (createItem(currentMember?._text, index == getArray(currentType?.members).length - 1)), '<ul>'
+      (accumulatorMember, currentMember, index) => accumulatorMember + (createItem(currentMember?._text)), '<ul>'
     ))) + '</ul></div>', ''
   ) + '</div></body>'
 }
@@ -122,9 +96,8 @@ function createHeading(headingName) {
   return `<h3>${headingName.trim()}: </h3>`
 }
 
-function createItem(itemName, isLast) {
+function createItem(itemName) {
   return `<li>${itemName.trim()}</li>`
-  // return `<li>${itemName.trim()}${isLast ? '. ' : '; '}</li>`
 }
 
 function getArrayByNameTag(array, nameTag) {
@@ -220,8 +193,6 @@ async function runFile(fileName, workItemId, format, merge) {
 
 async function runResolution(resolution, workItemId, format = false, merge = false) {
 
-  let response
-
   try {
     const newResolutionJSON = JSON.parse(convert.xml2json(resolution, { compact: true, spaces: 4 }))
     const newResolutionHTML = formatResolutionJSON(newResolutionJSON)
@@ -234,11 +205,7 @@ async function runResolution(resolution, workItemId, format = false, merge = fal
         resolution = convert.json2xml(newResolutionJSON, { compact: true, spaces: 4 })
       }
 
-      await modifyResolution(workItemId, resolution)
-
-      response = 'Resolution alterada!'
-
-      return response
+      return modifyResolution(workItemId, resolution)
     }
 
     // Dando upsert (mergeenando com o que ja tem)
@@ -256,15 +223,10 @@ async function runResolution(resolution, workItemId, format = false, merge = fal
     const mergedResolutionJSON = mergeResolutions(currentResolutionJSON, newResolutionHTMLToJSON)
     const mergedResolutionHTML = convert.json2xml(mergedResolutionJSON, { compact: true, spaces: 4 })
 
-    await modifyResolution(workItemId, mergedResolutionHTML)
-
-    response = 'Resolution alterada!'
+    return await modifyResolution(workItemId, mergedResolutionHTML)
   } catch (error) {
-    response = error
+    return error
   }
-
-  return response
-
 }
 
 async function updateTokenWithAssigner() {
@@ -299,18 +261,10 @@ async function init() {
   const merge = !args?.override ?? true
   const updateWithAssigner = args?.assignedUpdate ?? false
 
-  projectName = await getProjectName(workItemId)
-
   let response
 
   if (!TOKEN) {
     response = 'Token não encontrado!'
-    console.log(response)
-    return response
-  }
-
-  if (!projectName) {
-    response = 'Projeto ou WorkItem não econtrado!'
     console.log(response)
     return response
   }
