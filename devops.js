@@ -209,7 +209,14 @@ async function runResolution(resolution, workItemId, format = false, merge = fal
     }
 
     // Dando upsert (mergeenando com o que ja tem)
-    const workItemReceived = JSON.parse(await (await getWorkItem(workItemId, [RESOLUTION_FIELD])).text())
+    const workItemResponse = await getWorkItem(workItemId, [RESOLUTION_FIELD])
+
+    if (workItemResponse?.status != 200) {
+      return TRANSLATE_RESPONSE[workItemResponse?.status]
+    }
+
+    const workItemReceived = JSON.parse(await workItemResponse.text())
+
     let currentResolution = workItemReceived?.fields[RESOLUTION_FIELD]
 
     currentResolution = currentResolution?.replace(/<([A-z]+)([^>^/]*)>\s*<\/\1>/gim, '').replaceAll('<br>', '')
