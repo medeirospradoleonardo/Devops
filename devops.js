@@ -26,7 +26,7 @@ async function modifyResolution(workItemId, resolution) {
 
 async function getAssignedUserUniqueName(workItemId) {
   const userAssignedToField = 'System.AssignedTo'
-  const workItem = await getWorkItem(workItemId, [userAssignedToField])
+  const workItem = JSON.parse(await (await getWorkItem(workItemId, [userAssignedToField])).text())
 
   if (!workItem) {
     return;
@@ -209,7 +209,7 @@ async function runResolution(resolution, workItemId, format = false, merge = fal
     }
 
     // Dando upsert (mergeenando com o que ja tem)
-    const workItemReceived = await getWorkItem(workItemId, [RESOLUTION_FIELD])
+    const workItemReceived = JSON.parse(await (await getWorkItem(workItemId, [RESOLUTION_FIELD])).text())
     let currentResolution = workItemReceived?.fields[RESOLUTION_FIELD]
 
     currentResolution = currentResolution?.replace(/<([A-z]+)([^>^/]*)>\s*<\/\1>/gim, '').replaceAll('<br>', '')
