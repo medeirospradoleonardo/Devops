@@ -304,7 +304,7 @@ async function init() {
 
   if (!fileName && resolution) {
     response = await runResolution(resolution, workItemId, format, merge)
-    
+
     console.log(response.message)
 
     if(response.status == 200){
@@ -317,4 +317,3 @@ async function init() {
 }
 
 init()
-
