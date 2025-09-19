@@ -21,7 +21,12 @@ let tokenByUniqueName = {}
 const AUTOMATED_LABEL = '=========== Gerado Automaticamente ==========='
 
 async function modifyResolution(workItemId, resolution) {
-  return TRANSLATE_RESPONSE[(await modifyField(workItemId, RESOLUTION_FIELD, resolution))?.status]
+  const statusResponse = (await modifyField(workItemId, RESOLUTION_FIELD, resolution))?.status;
+
+  return {
+    message: TRANSLATE_RESPONSE[statusResponse],
+    status: statusResponse
+  }
 }
 
 async function getAssignedUserUniqueName(workItemId) {
@@ -185,7 +190,10 @@ async function runFile(fileName, workItemId, format, merge) {
     newResolutionXML = fs.readFileSync(fileName, 'utf8')
     response = await runResolution(newResolutionXML, workItemId, format, merge)
   } catch (error) {
-    response = error
+    response = {
+      message: error.message,
+      status: 500
+    }
   }
 
   return response
@@ -205,7 +213,7 @@ async function runResolution(resolution, workItemId, format = false, merge = fal
         resolution = convert.json2xml(newResolutionJSON, { compact: true, spaces: 4 })
       }
 
-      return modifyResolution(workItemId, resolution)
+      return await modifyResolution(workItemId, resolution)
     }
 
     // Dando upsert (mergeenando com o que ja tem)
@@ -232,7 +240,10 @@ async function runResolution(resolution, workItemId, format = false, merge = fal
 
     return await modifyResolution(workItemId, mergedResolutionHTML)
   } catch (error) {
-    return error
+    return {
+      message: error.message,
+      status: 500
+    }
   }
 }
 
@@ -273,7 +284,7 @@ async function init() {
   if (!TOKEN) {
     response = 'Token não encontrado!'
     console.log(response)
-    return response
+    process.exit(1)
   }
 
   if (updateWithAssigner) {
@@ -282,14 +293,26 @@ async function init() {
 
   if (!resolution && fileName) {
     response = await runFile(fileName, workItemId, format, merge)
-    console.log(response)
-    return response
+
+    console.log(response.message)
+
+    if (response.status == 200) {
+      return response
+    } else {
+      process.exit(1)
+    }
   }
 
   if (!fileName && resolution) {
     response = await runResolution(resolution, workItemId, format, merge)
-    console.log(response)
-    return response
+
+    console.log(response.message)
+
+    if (response.status == 200) {
+      return response
+    } else {
+      process.exit(1)
+    }
   }
 
 }
