@@ -212,7 +212,7 @@ async function runResolution(resolution, workItemId, format = false, merge = fal
         resolution = convert.json2xml(newResolutionJSON, { compact: true, spaces: 4 })
       }
 
-      return modifyResolution(workItemId, resolution)
+      return await modifyResolution(workItemId, resolution)
     }
 
     // Dando upsert (mergeenando com o que ja tem)
@@ -279,6 +279,7 @@ async function init() {
   const updateWithAssigner = args?.assignedUpdate ?? false
 
   let response
+  console.log('oi')
 
   if (!TOKEN) {
     response = 'Token não encontrado!'
@@ -289,15 +290,18 @@ async function init() {
   if (updateWithAssigner) {
     await updateTokenWithAssigner()
   }
+  console.log('oi')
 
+  console.log(resolution)
+  console.log(fileName)
   if (!resolution && fileName) {
     response = await runFile(fileName, workItemId, format, merge)
 
     console.log(response.message)
 
-    if(response.status == 200){
+    if (response.status == 200) {
       return response
-    }else{
+    } else {
       process.exit(1)
     }
   }
@@ -307,9 +311,9 @@ async function init() {
 
     console.log(response.message)
 
-    if(response.status == 200){
+    if (response.status == 200) {
       return response
-    }else{
+    } else {
       process.exit(1)
     }
   }
